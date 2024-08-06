@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PLC Data Viewer</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f7f9;
+            margin: 0;
+            padding: 20px;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        .table-container {
+            margin: 20px auto;
+            width: 80%;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            overflow-x: auto;
+        }
+        .table-title {
+            font-size: 24px;
+            color: #007bff;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        table, th, td {
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        th, td {
+            padding: 12px;
+            text-align: center;
+            color: #333;
+        }
+        th {
+            background-color: #007bff;
+            color: #fff;
+        }
+        td {
+            background-color: #f9f9f9;
+        }
+        td.true {
+            background-color: #17a2b8;
+            color: #fff;
+        }
+        td.false {
+            background-color: #f1f1f1;
+        }
+        .btn {
+            display: block;
+            margin: 20px auto;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            color: #fff;
+            font-size: 16px;
+            text-align: center;
+            text-decoration: none;
+            transition: background-color 0.3s;
+        }
+        .btn-start {
+            background-color: #28a745;
+        }
+        .btn-stop {
+            background-color: #dc3545;
+        }
+        .btn-active {
+            background-color: #17a2b8;
+        }
+        .btn-inactive {
+            background-color: #6c757d;
+        }
+    </style>
+</head>
+<body>
+    <h1>PLC Data Viewer</h1>
+
+    <button id="toggle-btn" class="btn btn-inactive">Start Continuous Reading</button>
+
+    <div class="table-container">
+        <div class="table-title">Boolean Array 1</div>
+        <table id="bool-table1">
+            <!-- Boolean table rows will be populated here -->
+        </table>
+    </div>
+    
+    <div class="table-container">
+        <div class="table-title">Boolean Array 2</div>
+        <table id="bool-table2">
+            <!-- Boolean table rows will be populated here -->
+        </table>
+    </div>
+
+    <div class="table-container">
+        <div class="table-title">Boolean Array 3</div>
+        <table id="bool-table3">
+            <!-- Boolean table rows will be populated here -->
+        </table>
+    </div>
+    
+    <div class="table-container">
+        <div class="table-title">Boolean Array 4</div>
+        <table id="bool-table4">
+            <!-- Boolean table rows will be populated here -->
+        </table>
+    </div>
+
+    <div class="table-container">
+        <div class="table-title">Boolean Array 5</div>
+        <table id="bool-table5">
+            <!-- Boolean table rows will be populated here -->
+        </table>
+    </div>
+    
+    <div class="table-container">
+        <div class="table-title">Boolean Array 6</div>
+        <table id="bool-table6">
+            <!-- Boolean table rows will be populated here -->
+        </table>
+    </div>
+
+    <div class="table-container">
+        <div class="table-title">Real Values</div>
+        <table id="real-table">
+            <!-- Real values table rows will be populated here -->
+        </table>
+    </div>
+    
+    <div class="table-container">
+        <div class="table-title">Integer Values</div>
+        <table id="int-table">
+            <!-- Integer values table rows will be populated here -->
+        </table>
+    </div>
+
+    <script>
+        let continuousReading = false;
+        let fetchInterval;
+        let isFetching = false; // Flag to prevent overlapping requests
+
+        function updateTable(id, data) {
+            const table = document.getElementById(id);
+            table.innerHTML = ''; // Clear existing table data
+
+            data.forEach((value, index) => {
+                const tr = document.createElement('tr');
+                const tdIndex = document.createElement('td');
+                tdIndex.textContent = index + 1;
+                const tdValue = document.createElement('td');
+                tdValue.textContent = value;
+                if (id.startsWith('bool-table')) {
+                    tdValue.className = value === 'True' ? 'true' : 'false';
+                }
+                tr.appendChild(tdIndex);
+                tr.appendChild(tdValue);
+                table.appendChild(tr);
+            });
+        }
+
+        async function fetchData() {
+            if (isFetching) return; // Exit if a request is already in progress
+            isFetching = true;
+
+            try {
+                const response = await fetch('/data');
+                if (!response.ok) {
+                    throw new Error('Network response was not ok: ' + response.statusText);
+                }
+                const text = await response.text();
+                try {
+
+                    const data = JSON.parse(text);
+
+                    // Function to convert integer to array of booleans
+                    function intToBoolArray(intVal) {
+                        const boolArray = [];
+                        for (let i = 0; i < 16; i++) {
+                            boolArray.push((intVal & (1 << i)) !== 0 ? 'True' : 'False');
+                        }
+                        return boolArray;
+                    }
+
+                    // Update all boolean tables
+                    updateTable('bool-table1', intToBoolArray(data.boolArray1.data[0]));
+                    updateTable('bool-table2', intToBoolArray(data.boolArray2.data[0]));
+                    updateTable('bool-table3', intToBoolArray(data.boolArray3.data[0]));
+                    updateTable('bool-table4', intToBoolArray(data.boolArray4.data[0]));
+                    updateTable('bool-table5', intToBoolArray(data.boolArray5.data[0]));
+                    updateTable('bool-table6', intToBoolArray(data.boolArray6.data[0]));
+
+                    // Update real values table
+                    const realData = data.realArray.slice(0, 20).map(value => {
+                        const numValue = parseFloat(value);
+                        return isNaN(numValue) ? 'N/A' : numValue.toFixed(2);
+                    });
+                    updateTable('real-table', realData);
+
+                    // Update integer values table if intArray exists
+                    if (data.intArray) {
+                        const intData = data.intArray.slice(0, 4).map(value => {
+                            const numValue = parseInt(value, 10); // Use parseInt for integers
+                            return isNaN(numValue) ? 'N/A' : numValue.toFixed(0); // Display as integer
+                        });
+                        updateTable('int-table', intData); // Update the integer table
+                    } else {
+                        // If no intArray in the data, clear the integer table
+                        updateTable('int-table', []);
+                    }
+
+                } catch (e) {
+                    console.error('Error parsing JSON:', e, 'Response text:', text);
+                }
+            } catch (error) {
+                console.error('Error fetching PLC data:', error);
+            } finally {
+                isFetching = false; // Reset the flag after fetching is complete
+            }
+        }
+
+        function toggleContinuousReading() {
+            if (continuousReading) {
+                clearInterval(fetchInterval);
+                document.getElementById('toggle-btn').classList.remove('btn-active');
+                document.getElementById('toggle-btn').classList.add('btn-inactive');
+                document.getElementById('toggle-btn').textContent = 'Start Continuous Reading';
+                continuousReading = false;
+            } else {
+                fetchData(); // Fetch data immediately
+                fetchInterval = setInterval(fetchData, 100); // Continue fetching every 100ms
+                document.getElementById('toggle-btn').classList.remove('btn-inactive');
+                document.getElementById('toggle-btn').classList.add('btn-active');
+                document.getElementById('toggle-btn').textContent = 'Stop Continuous Reading';
+                continuousReading = true;
+            }
+        }
+
+        document.getElementById('toggle-btn').addEventListener('click', toggleContinuousReading);
+
+        // Initial data fetch
+        fetchData();
+    </script>
+</body>
+</html>
