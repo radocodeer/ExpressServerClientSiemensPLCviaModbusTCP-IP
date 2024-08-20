@@ -1,29 +1,32 @@
-//libraries
+// server.js
 const express = require('express');
 const Modbus = require('modbus-serial');
 const path = require('path');
+const db = require('./database'); // Require the MySQL database module
 
-//create express node.js server!
 const app = express();
 const port = 3000;
 
-// Create a Modbus client
+app.use(express.static(path.join(__dirname, 'public')));
+
 const client = new Modbus();
+const serverIP = '192.168.227.11';
+const serverPort = 502;
 
-// Set the Modbus server IP address and port
-const serverIP = '192.168.227.11'; // PLC as modbus tcpip server!
-const serverPort = 502; // Modbus TCP/IP default port is 502
+const BoolQuantity = 1;
+const FloatQuantity = 2;
+const IntQuantity = 1;
 
-const BoolQuantity = 1; // Quantity for reading boolean array
-const FloatQuantity = 2; // Quantity for reading float values
-const IntQuantity = 1; // Quantity for reading integers (one register per integer)
-
-let RealArr = []; // Array to hold all real values
-let boolArrays = []; // Array to hold all boolean arrays
-let IntArr = []; // Array to hold all int values
 let cnt = 0;
 
-// Connect to the Modbus server once at startup
+let RadoTest = '';
+
+let RealArr = [];
+let boolArrays = [];
+let IntArr = [];
+let ServerText = "toto je text zo servera pre clienta!";
+
+// Connect to Modbus server
 client.connectTCP(serverIP, { port: serverPort })
     .then(() => {
         console.log('Connected to Modbus server');
@@ -45,6 +48,32 @@ function readRegisters(startAddress, quantity) {
     });
 }
 
+// Function to write a single register (for booleans or integers)
+function writeRegisters(startAddress, value) {
+    return new Promise((resolve, reject) => {
+        client.writeRegister(startAddress, value, (err, data) => {
+            if (err) {
+                reject(err);
+            } else {
+                resolve(data);
+            }
+        });
+    });
+}
+
+// Function to write a float value (using two registers)
+function writeFloatRegister(address, value) {
+    const buffer = Buffer.alloc(4);
+    buffer.writeFloatBE(value);
+    const highBits = buffer.readUInt16BE(0);
+    const lowBits = buffer.readUInt16BE(2);
+
+    return Promise.all([
+        writeRegisters(address, highBits),
+        writeRegisters(address + 1, lowBits)
+    ]);
+}
+
 // Function to read multiple registers sequentially and process the data
 function readSequentialRegisters(startAddresses, quantity, processData) {
     const promises = startAddresses.map((address, index) => 
@@ -54,38 +83,59 @@ function readSequentialRegisters(startAddresses, quantity, processData) {
     return Promise.all(promises);
 }
 
-// Serve the static HTML page at the root route, Server response with HTML page, When Page loaded!
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
+// Function to save data to the MySQL database
+function saveDataToDB(RealArr, IntArr, RadoTest) {    
+    db.query(`
+        INSERT INTO RadovaPLC_Databaza (REALs, INTs, RadoColumn)
+        VALUES (?, ?, ?)`,
+        [             
+            JSON.stringify(RealArr), 
+            JSON.stringify(IntArr),
+            JSON.stringify(RadoTest),
+        ],
+        function(err) {
+            if (err) {
+                return console.error('Error inserting data:', err);
+            }
+            console.log(`Data saved successfully`);
+        });
+}
 
-// API endpoint to read data from PLC... When "/data" requested, also one time on page load, or when continues reading enabled!
 app.get('/data', async (req, res) => {
     try {
-        
-        const boolArrayAddresses = [0, 1, 2, 3, 4, 5]; // Correct addresses for boolean arrays from PLC!
+               
+        const boolArrayAddresses = [0, 1, 2, 3, 4, 5];
 
-        // Read boolean arrays
         await readSequentialRegisters(boolArrayAddresses, BoolQuantity, (data, index) => {
-            boolArrays[index] = data;            
+            boolArrays[index] = data;
         });
-       
-        // Read floats from addresses 6 to 26
-        const floatAddresses = Array.from({ length: 20 }, (_, i) => i * 2 + 6); // Generates addresses 6, 8, 10, ..., 24
+        let boolValue = false;
+        if (boolArrays[2].data == 32768){
+            boolValue = true;
+        }
+        else {
+            boolValue = false;
+        }        
+
+        //console.log(boolValue);
+
+        const floatAddresses = Array.from({ length: 20 }, (_, i) => i * 2 + 6);
         await readSequentialRegisters(floatAddresses, FloatQuantity, (data, index) => {
             RealArr[index] = data.buffer.readFloatBE(0).toFixed(2);
         });
 
-        // Read INTs 46 to 49
         const intAddresses = [46, 47, 48, 49];
         await readSequentialRegisters(intAddresses, IntQuantity, (data, index) => {
             IntArr[index] = data.buffer.readInt16BE(0);
         });
-        //Check how many times reading was requested and succesfully answered!
-        cnt++;
-        console.log(`Read ${cnt} times. Data successfully fetched.`);
-
-        //send to the client data in JSON Format!
+        
+        // Save the data to the MySQL database
+        if (boolValue){
+            cnt++;
+            RadoTest = 'Hello World!' + cnt;
+            saveDataToDB(RealArr, IntArr, RadoTest); 
+        }        
+        
         res.json({
             boolArray1: boolArrays[0],
             boolArray2: boolArrays[1],
@@ -94,14 +144,72 @@ app.get('/data', async (req, res) => {
             boolArray5: boolArrays[4],
             boolArray6: boolArrays[5],
             realArray: RealArr,
-            intArray: IntArr // Include intArray in the response
+            intArray: IntArr,
+            ServerText,
         });
-    } catch (err) { //catch errors!
+    } catch (err) {
         console.error('Error:', err);
         res.status(500).send('Error reading PLC data');
     }
 });
 
-app.listen(port, () => { //Server listen here..
+// API endpoint to write data to PLC
+app.post('/write', express.json(), async (req, res) => {
+    const { address, bitIndex, newValue, test } = req.body;
+    console.log("address  " + address + " bitIndex " + bitIndex + " newValue " + newValue + " rado test " + test);
+    if (address === undefined || bitIndex === undefined || newValue === undefined) {
+        return res.status(400).send('Invalid values');
+    }
+
+    try {
+        // Read the current value
+        const data = await readRegisters(address, BoolQuantity);
+        let currentValue = data.data[0];
+
+        // Toggle the specific bit
+        if (newValue === 1) {
+            currentValue |= (1 << bitIndex); // Set the bit
+        } else {
+            currentValue &= ~(1 << bitIndex); // Clear the bit
+        }
+
+        // Write the new value back to the register
+        await writeRegisters(address, [currentValue]);
+
+        res.send('Successfully updated PLC data');
+    } catch (err) {
+        console.error('Error:', err);
+        res.status(500).send('Error writing PLC data');
+    }
+});
+
+// API endpoint to update real values
+app.post('/update-real', express.json(), async (req, res) => {
+    const { address, newValue } = req.body;
+
+    try {
+        await writeFloatRegister(address, parseFloat(newValue));
+        res.status(200).send('Real value updated successfully');
+    } catch (err) {
+        console.error('Error updating real value:', err);
+        res.status(500).send('Error updating real value');
+    }
+});
+
+// API endpoint to update integer values
+app.post('/update-int', express.json(), async (req, res) => {
+    const { address, newValue } = req.body;
+
+    try {
+        await writeRegisters(address, parseInt(newValue, 10));
+        res.status(200).send('Integer value updated successfully');
+    } catch (err) {
+        console.error('Error updating integer value:', err);
+        res.status(500).send('Error updating integer value');
+    }
+});
+
+// Start the server
+app.listen(port, () => {
     console.log(`Server is running on http://localhost:${port}`);
 });
