@@ -1,2 +1,1 @@
-# ExpressServerClientSiemensPLCviaModbusTCP-IP
-WEB_Client &lt;--> WEB_Server &lt;--> SiemensPLC_ModbusServer
+This code represents a full-stack application where a web client interacts with a web server. The web server acts as a Modbus client that communicates with a Modbus server (PLC) to read and write data. The server also stores the retrieved PLC data in a MySQL database.
