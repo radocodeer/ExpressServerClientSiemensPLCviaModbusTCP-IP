@@ -1,0 +1,9 @@
+// Custom names for boolean values
+        const customNames = {
+            1: 'FAN 1 Rado',
+            2: 'FAN 2 Maros',
+            3: 'Buzzer',
+            4: 'Door',
+            5: 'Light Barrier',
+            6: 'Maros Window'
+        };

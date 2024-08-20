@@ -1,0 +1,138 @@
+body {
+    font-family: 'Arial', sans-serif;
+    background-color: #f4f7f9;
+    margin: 0;
+    padding: 0;
+}
+
+.header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    background-color: #fff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    z-index: 1000;
+}
+
+.header h1 {
+    text-align: center;
+    color: #333;
+    margin: 0;
+}
+
+.header button {
+    display: block;
+    margin: 10px auto;
+    padding: 12px 24px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    color: #fff;
+    font-size: 16px;
+    text-align: center;
+    text-decoration: none;
+    transition: background-color 0.3s;
+}
+
+.header .textFromServer {
+    text-align: center;
+    color: #333;
+}
+
+.content {
+    margin-top: 100px; /* Space for the fixed header */
+    padding: 20px;
+}
+
+.table-container {
+    margin: 60px auto;
+    width: 80%;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    overflow-x: auto;
+}
+
+.table-title {
+    font-size: 24px;
+    color: #007bff;
+    border-bottom: 2px solid #007bff;
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+table, th, td {
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+th, td {
+    padding: 12px;
+    text-align: center;
+    color: #333;
+}
+
+th {
+    background-color: #007bff;
+    color: #fff;
+}
+
+td {
+    background-color: #f9f9f9;
+}
+
+td.true {
+    background-color: #17a2b8;
+    color: #fff;
+}
+
+td.false {
+    background-color: #f1f1f1;
+}
+
+/* Style adjustments for real and integer value inputs */
+table#real-table td input,
+table#int-table td input {
+    font-size: 18px; /* Increase the font size */
+    padding: 8px;    /* Increase padding for better spacing */
+    width: 100%;     /* Make input full-width to fit the cell */
+    box-sizing: border-box; /* Include padding in element's total width and height */
+}
+
+.btn {
+    display: block;
+    margin: 20px auto;
+    padding: 12px 24px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    color: #fff;
+    font-size: 16px;
+    text-align: center;
+    text-decoration: none;
+    transition: background-color 0.3s;
+}
+
+.btn-start {
+    background-color: #28a745;
+}
+
+.btn-stop {
+    background-color: #dc3545;
+}
+
+.btn-active {
+    background-color: #17a2b8;
+}
+
+.btn-inactive {
+    background-color: #6c757d;
+}
