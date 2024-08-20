@@ -4,146 +4,60 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PLC Data Viewer</title>
-    <style>
-        body {
-            font-family: 'Arial', sans-serif;
-            background-color: #f4f7f9;
-            margin: 0;
-            padding: 20px;
-        }
-        h1 {
-            text-align: center;
-            color: #333;
-        }
-        .table-container {
-            margin: 20px auto;
-            width: 80%;
-            background-color: #fff;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            padding: 20px;
-            overflow-x: auto;
-        }
-        .table-title {
-            font-size: 24px;
-            color: #007bff;
-            border-bottom: 2px solid #007bff;
-            padding-bottom: 10px;
-            margin-bottom: 20px;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        table, th, td {
-            border: 1px solid #ddd;
-            border-radius: 4px;
-        }
-        th, td {
-            padding: 12px;
-            text-align: center;
-            color: #333;
-        }
-        th {
-            background-color: #007bff;
-            color: #fff;
-        }
-        td {
-            background-color: #f9f9f9;
-        }
-        td.true {
-            background-color: #17a2b8;
-            color: #fff;
-        }
-        td.false {
-            background-color: #f1f1f1;
-        }
-        .btn {
-            display: block;
-            margin: 20px auto;
-            padding: 12px 24px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            color: #fff;
-            font-size: 16px;
-            text-align: center;
-            text-decoration: none;
-            transition: background-color 0.3s;
-        }
-        .btn-start {
-            background-color: #28a745;
-        }
-        .btn-stop {
-            background-color: #dc3545;
-        }
-        .btn-active {
-            background-color: #17a2b8;
-        }
-        .btn-inactive {
-            background-color: #6c757d;
-        }
-    </style>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <h1>PLC Data Viewer</h1>
+    <div class="header">
+        <h1>Read & Write PLC data</h1>    
 
-    <button id="toggle-btn" class="btn btn-inactive">Start Continuous Reading</button>
+        <button id="toggle-btn" class="btn btn-inactive">Start Continuous Reading</button>
 
-    <div class="table-container">
-        <div class="table-title">Boolean Array 1</div>
-        <table id="bool-table1">
-            <!-- Boolean table rows will be populated here -->
-        </table>
-    </div>
-    
-    <div class="table-container">
-        <div class="table-title">Boolean Array 2</div>
-        <table id="bool-table2">
-            <!-- Boolean table rows will be populated here -->
-        </table>
+        <div class="textFromServer">Data Loading...</div>
     </div>
 
-    <div class="table-container">
-        <div class="table-title">Boolean Array 3</div>
-        <table id="bool-table3">
-            <!-- Boolean table rows will be populated here -->
-        </table>
-    </div>
-    
-    <div class="table-container">
-        <div class="table-title">Boolean Array 4</div>
-        <table id="bool-table4">
-            <!-- Boolean table rows will be populated here -->
-        </table>
-    </div>
+    <div class="content">
+        <!-- Bool Values Table -->
+        <div class="table-container">
+            <div class="table-title">Boolean Array 1</div>
+            <table id="bool-table1"></table>
+        </div>
 
-    <div class="table-container">
-        <div class="table-title">Boolean Array 5</div>
-        <table id="bool-table5">
-            <!-- Boolean table rows will be populated here -->
-        </table>
-    </div>
-    
-    <div class="table-container">
-        <div class="table-title">Boolean Array 6</div>
-        <table id="bool-table6">
-            <!-- Boolean table rows will be populated here -->
-        </table>
-    </div>
+        <div class="table-container">
+            <div class="table-title">Boolean Array 2</div>
+            <table id="bool-table2"></table>
+        </div>
 
-    <div class="table-container">
-        <div class="table-title">Real Values</div>
-        <table id="real-table">
-            <!-- Real values table rows will be populated here -->
-        </table>
-    </div>
-    
-    <div class="table-container">
-        <div class="table-title">Integer Values</div>
-        <table id="int-table">
-            <!-- Integer values table rows will be populated here -->
-        </table>
+        <div class="table-container">
+            <div class="table-title">Boolean Array 3</div>
+            <table id="bool-table3"></table>
+        </div>
+
+        <div class="table-container">
+            <div class="table-title">Boolean Array 4</div>
+            <table id="bool-table4"></table>
+        </div>
+
+        <div class="table-container">
+            <div class="table-title">Boolean Array 5</div>
+            <table id="bool-table5"></table>
+        </div>
+
+        <div class="table-container">
+            <div class="table-title">Boolean Array 6</div>
+            <table id="bool-table6"></table>
+        </div>
+
+        <!-- Real Values Table -->
+        <div class="table-container">
+            <div class="table-title">Real Values</div>
+            <table id="real-table"></table>
+        </div>
+        
+        <!-- Integer Values Table -->
+        <div class="table-container">
+            <div class="table-title">Integer Values</div>
+            <table id="int-table"></table>
+        </div>
     </div>
 
     <script>
@@ -151,21 +65,150 @@
         let fetchInterval;
         let isFetching = false; // Flag to prevent overlapping requests
 
-        function updateTable(id, data) {
+        let ClientText = "Toto je text od Clienta pre Server!";
+
+        // Custom names for boolean values
+        const customNames1 = {
+            1: 'FAN 1 ON, Rado',
+            2: 'FAN 2 ON, Maros',
+            3: 'Buzzer ON',
+            4: 'Door Opened!',
+            5: 'Light Barrier interrupted!',
+            6: 'Maros Window opened!',
+            7: 'Reset Counter!',
+            8: 'Enable Buzzer!',
+            9: 'Enable FANs'
+        };
+
+        // Custom names for boolean values
+        const customNames2 = {
+            1: 'Modbus Control ON',
+            2: 'Local Control ON'            
+        };
+
+        const customNames3 = {
+            1: 'Door openings'   
+        }
+
+        const customNames4 = {
+            1: 'Enable Write to DB'
+        }
+
+        // Convert integer to an array of boolean strings
+        function intToBoolArray(intVal) {
+            const boolArray = [];
+            for (let i = 0; i < 16; i++) {
+                boolArray.push((intVal & (1 << i)) !== 0 ? 'True' : 'False');
+            }
+            return boolArray.reverse(); // Reverse to match the order in your table
+        }
+
+        // Update/Create table of BoolArrays !
+        function updateBoolTable(id, data) {
             const table = document.getElementById(id);
             table.innerHTML = ''; // Clear existing table data
 
             data.forEach((value, index) => {
                 const tr = document.createElement('tr');
                 const tdIndex = document.createElement('td');
-                tdIndex.textContent = index + 1;
+                
+                if (id === 'bool-table1') {
+                    // Use custom name if available, otherwise default to index + 1
+                    const displayName = customNames1[index + 1] || (index + 1);
+                    tdIndex.textContent = displayName;
+                } else if (id == 'bool-table2'){
+                    // Use custom name if available, otherwise default to index + 1
+                    const displayName = customNames2[index + 1] || (index + 1);
+                    tdIndex.textContent = displayName;
+                } else if (id == 'bool-table3'){
+                    // Use custom name if available, otherwise default to index + 1
+                    const displayName = customNames4[index + 1] || (index + 1);
+                    tdIndex.textContent = displayName;
+                }
+                 else {
+                    // Default numbering for other boolean arrays
+                    tdIndex.textContent = index + 1;
+                }
+
                 const tdValue = document.createElement('td');
                 tdValue.textContent = value;
-                if (id.startsWith('bool-table')) {
-                    tdValue.className = value === 'True' ? 'true' : 'false';
-                }
+                tdValue.className = value === 'True' ? 'true' : 'false';
+                tdValue.addEventListener('click', () => {
+                    toggleBool(id, index);
+                });
                 tr.appendChild(tdIndex);
                 tr.appendChild(tdValue);
+                table.appendChild(tr);
+            });
+        }
+
+        // Update/Create table of REALs !
+        function updateRealTable(realArray) {
+            if (!Array.isArray(realArray)) {
+                console.error('Expected an array for realArray but received:', realArray);
+                return;
+            }
+
+            const table = document.getElementById('real-table');
+            table.innerHTML = '';
+
+            realArray.forEach((value, index) => {
+                const tr = document.createElement('tr');
+                const tdIndex = document.createElement('td');
+                tdIndex.textContent = `Real ${index + 1}`;
+                const tdValue = document.createElement('td');
+                tdValue.textContent = value;
+                tdValue.className = 'real-value';
+
+                const tdInput = document.createElement('td');
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.value = value;
+                input.onblur = () => updateReal(index, input.value);
+                tdInput.appendChild(input);
+
+                tr.appendChild(tdIndex);
+                tr.appendChild(tdValue);
+                tr.appendChild(tdInput);
+                table.appendChild(tr);
+            });
+        }
+
+        // Update/Create table of INTs !
+        function updateIntTable(intArray) {
+            if (!Array.isArray(intArray)) {
+                console.error('Expected an array for intArray but received:', intArray);
+                return;
+            }
+
+            const table = document.getElementById('int-table');
+            table.innerHTML = '';
+
+            intArray.forEach((value, index) => {
+                const tr = document.createElement('tr');
+                const tdIndex = document.createElement('td');
+
+                
+                // Use custom name if available, otherwise default to index + 1
+                const displayName = customNames3[index + 1] || `Integer ${index + 1}`;
+                tdIndex.textContent = displayName;
+                 
+
+                //tdIndex.textContent = `Integer ${index + 1}`;
+                const tdValue = document.createElement('td');
+                tdValue.textContent = value;
+                tdValue.className = 'int-value';
+
+                const tdInput = document.createElement('td');
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.value = value;
+                input.onblur = () => updateInt(index, input.value);
+                tdInput.appendChild(input);
+
+                tr.appendChild(tdIndex);
+                tr.appendChild(tdValue);
+                tr.appendChild(tdInput);
                 table.appendChild(tr);
             });
         }
@@ -173,55 +216,30 @@
         async function fetchData() {
             if (isFetching) return; // Exit if a request is already in progress
             isFetching = true;
+            console.log("FetchData happened!");
 
             try {
-                const response = await fetch('/data');
+                const response = await fetch('/data');                
                 if (!response.ok) {
                     throw new Error('Network response was not ok: ' + response.statusText);
                 }
-                const text = await response.text();
+                const data = await response.json(); // Parse JSON directly
+                console.log('Data received from server:', JSON.stringify(data.ServerText, null, 2));
+                document.getElementsByClassName("textFromServer")[0].innerHTML = data.ServerText;
                 try {
-
-                    const data = JSON.parse(text);
-
-                    // Function to convert integer to array of booleans
-                    function intToBoolArray(intVal) {
-                        const boolArray = [];
-                        for (let i = 0; i < 16; i++) {
-                            boolArray.push((intVal & (1 << i)) !== 0 ? 'True' : 'False');
-                        }
-                        return boolArray;
-                    }
-
                     // Update all boolean tables
-                    updateTable('bool-table1', intToBoolArray(data.boolArray1.data[0]));
-                    updateTable('bool-table2', intToBoolArray(data.boolArray2.data[0]));
-                    updateTable('bool-table3', intToBoolArray(data.boolArray3.data[0]));
-                    updateTable('bool-table4', intToBoolArray(data.boolArray4.data[0]));
-                    updateTable('bool-table5', intToBoolArray(data.boolArray5.data[0]));
-                    updateTable('bool-table6', intToBoolArray(data.boolArray6.data[0]));
-
-                    // Update real values table
-                    const realData = data.realArray.slice(0, 20).map(value => {
-                        const numValue = parseFloat(value);
-                        return isNaN(numValue) ? 'N/A' : numValue.toFixed(2);
-                    });
-                    updateTable('real-table', realData);
-
-                    // Update integer values table if intArray exists
-                    if (data.intArray) {
-                        const intData = data.intArray.slice(0, 4).map(value => {
-                            const numValue = parseInt(value, 10); // Use parseInt for integers
-                            return isNaN(numValue) ? 'N/A' : numValue.toFixed(0); // Display as integer
-                        });
-                        updateTable('int-table', intData); // Update the integer table
-                    } else {
-                        // If no intArray in the data, clear the integer table
-                        updateTable('int-table', []);
+                    for (let i = 1; i <= 6; i++) {
+                        const boolArrayKey = `boolArray${i}`;
+                        const boolData = intToBoolArray(data[boolArrayKey].data[0]); // Use the function to convert
+                        updateBoolTable(`bool-table${i}`, boolData);
                     }
+
+                    // Update real and integer tables
+                    updateRealTable(data.realArray);
+                    updateIntTable(data.intArray);
 
                 } catch (e) {
-                    console.error('Error parsing JSON:', e, 'Response text:', text);
+                    console.error('Error processing data:', e, 'Response data:', data);
                 }
             } catch (error) {
                 console.error('Error fetching PLC data:', error);
@@ -230,6 +248,82 @@
             }
         }
 
+        function toggleBool(tableId, index) {
+            const table = document.getElementById(tableId);
+            const row = table.rows[index];
+            const cell = row.cells[1];
+            const newValue = cell.textContent === 'True' ? 'False' : 'True';
+            
+            console.log(`Toggling boolean at index ${index + 1} in ${tableId}. Current value: ${cell.textContent}, New value: ${newValue}`);
+
+            // Determine which boolean array we are working with
+            const arrayIndex = tableId.match(/\d+/)[0]; // Extract the number from tableId
+            const address = parseInt(arrayIndex) - 1; // Map table number to address (0-based index)
+
+            // Send the updated value to the server
+            fetch('/write', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    address: address, 
+                    bitIndex: 15 - index, 
+                    newValue: parseInt(newValue === 'True' ? '1' : '0'), // Convert newValue to 1 or 0
+                    test: ClientText,
+                    arrayIndex: arrayIndex // Send the array index for server-side handling
+                })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.text();
+            })
+            .then(text => console.log(text))
+            .catch(error => console.error('Error:', error));
+        }
+
+        function updateReal(index, newValue) {
+            const address = 6 + index * 2; // Real values start at address 6
+
+            console.log('Sending request to update real value:', { address, newValue }); 
+
+            fetch('/update-real', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ address, newValue })
+            })
+            .then(response => {
+                if (response.ok) {
+                    fetchData(); // Refresh data after successful update
+                } else {
+                    console.error('Failed to update real value');
+                }
+            })
+            .catch(err => console.error('Error:', err));
+        }
+
+        function updateInt(index, newValue) {
+            const address = 46 + index * 1; // Integer values start at address 46
+
+            console.log('Sending request to update integer value:', { address, newValue }); 
+
+            fetch('/update-int', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ address, newValue })
+            })
+            .then(response => {
+                if (response.ok) {
+                    fetchData(); // Refresh data after successful update
+                } else {
+                    console.error('Failed to update integer value');
+                }
+            })
+            .catch(err => console.error('Error:', err));
+        }
+        
         function toggleContinuousReading() {
             if (continuousReading) {
                 clearInterval(fetchInterval);
@@ -247,10 +341,11 @@
             }
         }
 
-        document.getElementById('toggle-btn').addEventListener('click', toggleContinuousReading);
-
+        document.getElementById('toggle-btn').addEventListener('click', toggleContinuousReading);            
+       
         // Initial data fetch
         fetchData();
+        toggleContinuousReading();
     </script>
 </body>
 </html>
